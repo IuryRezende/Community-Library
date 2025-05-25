@@ -253,7 +253,7 @@ def menu_busca_livro():
 def menu_atualizar_livro():
     clear()
     print("===== Atualizar Livro =====")
-    livro_atual = input("Digite o livro: ")
+    livro_atual = input("Digite o titulo do livro: ")
     em_estoque = input('Em estoque? [S]im ou [N]ão: ')
     livro_atual = pull_book(livro_atual)
 
@@ -354,7 +354,7 @@ def emprestimos_ativos():
     menu_emprestimos()
 
 def historico_emprestimo():
-    print('DATA \t \t \t LIVRO \t \t USUÁRIO')
+    print('DATA \t \t \t LIVRO \t \t \t USUÁRIO')
     for user in lista_usuarios:
         if user.livro_emprestimo is not None:
             print(
@@ -364,8 +364,18 @@ def menu_realizar_emprestimo():
     clear()
     print("===== Realizar Emprestimos =====")
     lista_books()
+    print("5 - Voltar")
     usuario_atual = input("Digite o usuário: ")
-    livro_indice = int(input("Digite o índice do livro que desejas: "))
+    while True:
+        livro_indice = input("Digite o índice do livro que desejas: ")
+        if livro_indice.isdigit():
+            livro_indice = int(livro_indice)
+            if livro_indice == 5:
+                retornando()
+                menu_emprestimos()
+            break
+        else:
+            print("Entrada Inválida!")
     usuario_atual = pull_user(usuario_atual)
     for user in lista_usuarios:
         if usuario_atual.livro_emprestimo is None:
