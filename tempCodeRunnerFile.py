@@ -1,2 +1,1 @@
-encontrado:
-        print('Usuário
+datetime.date.today()
