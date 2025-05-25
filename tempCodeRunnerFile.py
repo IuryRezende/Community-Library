@@ -1,2 +1,0 @@
-encontrado:
-        print('Usuário

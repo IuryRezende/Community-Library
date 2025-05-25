@@ -1,6 +1,7 @@
 import os
 from time import sleep, strftime, localtime
 import datetime
+from colorama import Fore, Back
 
 
 def clear():
@@ -35,15 +36,13 @@ topico_emprestimos = ["Realizar empréstimos",
                       "Histórico de empréstimos",
                       "Voltar"]
 
-topico_multas = ["Calcular multa",
-                 "Emitir aviso de atraso",
+topico_multas = ["Multas pendentes",
                  "Ver lista de inadimplentes",
                  "Voltar"]
 
 topico_relatorios = ["Livros mais emprestados",
                      "Usuários com mais empréstimos",
                      "Estoque atual",
-                     "Relatório mensal",
                      "Voltar"]
 
 
@@ -52,17 +51,23 @@ def retornando():
     sleep(2)
 
 
+def enter_to_return():
+    input("Pressione ENTER para voltar")
+
 # =========================== Progamação Usuários===================================
 
 # lista_livros = []
 
 
 class Usuario:
-    def __init__(self, nome, livro_emprestimo=None):
+    def __init__(self, nome, livro_emprestimo=None, emprestimos=0):
         self.nome = nome
+        self.emprestimos = emprestimos
         self.livro_emprestimo = None
-        self.hora_emprestimo = None
-        self.data_devolucao = None
+        self.data_emprestimo = None
+        self.data_devolucao = datetime.date.today()
+        self.data_devolucao_prevista = None
+        self.multa = None
 
     def atualizar(self, nome, livro=None):
         if nome:
@@ -74,9 +79,13 @@ class Usuario:
             print('Livro adicionado!')
 
 
-user1 = Usuario('iury')
-user2 = Usuario('richard')
-lista_usuarios = [user1, user2]
+user1 = Usuario('Iury')
+user2 = Usuario('Richard')
+user3 = Usuario("Elder")
+user4 = Usuario("Daniel")
+user5 = Usuario("Marcelo")
+user6 = Usuario("Bruno")
+lista_usuarios = [user1, user2, user3, user4, user5]
 
 
 def check_user(nome):
@@ -167,9 +176,10 @@ def menu_remover_usuarios():
 
 
 class Livro:
-    def __init__(self, titulo):
+    def __init__(self, titulo, emprestimos=0):
         self.titulo = titulo
         self.em_estoque = 'Em estoque'
+        self.emprestimos = emprestimos
 
     def atualizar(self, titulo, estoque):
         if titulo:
@@ -180,9 +190,11 @@ class Livro:
             self.em_estoque = 'Em estoque' if estoque == 's' else 'Sem estoque'
 
 
-book1 = Livro("paul")
-book2 = Livro("fimose")
-lista_livros = [book1, book2]
+book1 = Livro("Anatomia")
+book2 = Livro("Logica de Programação")
+book3 = Livro("Pascal")
+book4 = Livro("Álgebra")
+lista_livros = [book1, book2, book3, book4]
 
 
 def check_book(titulo):
@@ -214,6 +226,7 @@ def cadastrar_livro():
 def lista_books():
     for i, livro in enumerate(lista_livros):
         print(f"{i+1} - {livro.titulo} ({livro.em_estoque})")
+# =======================================================================
 
 
 def menu_lista_livros():
@@ -245,7 +258,7 @@ def menu_busca_livro():
 def menu_atualizar_livro():
     clear()
     print("===== Atualizar Livro =====")
-    livro_atual = input("Digite o livro: ")
+    livro_atual = input("Digite o titulo do livro: ")
     em_estoque = input('Em estoque? [S]im ou [N]ão: ')
     livro_atual = pull_book(livro_atual)
 
@@ -277,6 +290,7 @@ def menu_remover_livro():
 
 # ====================== Empréstimos ===============
 
+
 def realizar_emprestimo(usuario, livro):
     user = pull_user(usuario)
     book = pull_book(livro)
@@ -293,33 +307,24 @@ def realizar_emprestimo(usuario, livro):
 
     if book.em_estoque != 'Em estoque':
         print("Livro indisponível para empréstimo.")
-        retornando()
         return
 
     user.livro_emprestimo = livro
     user.data_emprestimo = datetime.date.today()
-    user.data_devolucao = user.data_emprestimo + datetime.timedelta(days=7)
+    user.data_devolucao_prevista = user.data_emprestimo + \
+        datetime.timedelta(days=7)
+    user.emprestimos += 1
+    book.emprestimos += 1
     book.em_estoque = 'Sem estoque'
+    print("===============================================")
     print(f"Empréstimo realizado com sucesso para {user.nome}")
     print(f'{user.nome} tem 7 dias para devolução.')
+    print(f"{Back.LIGHTRED_EX}Obs* caso devolva após 7 dias, será aplicada\n"
+          f"uma multa de R$1,00 por dia útil{Back.RESET}")
+    enter_to_return()
     retornando()
     menu_emprestimos()
 
-def menu_realizar_devolucao():
-    clear()
-    print("===== Realizar Devolução ======")
-    usuario_atual = input("Digite o usuario: ")
-    usuario_atual = pull_user(usuario_atual)
-
-    print(f"{usuario_atual.nome} devolveu {usuario_atual.livro_emprestimo}")
-
-    livro = pull_book(usuario_atual.livro_emprestimo)
-    livro.em_estoque = "Em estoque"
-    usuario_atual.livro_emprestimo = None
-    
-    input("Pressione ENTER para voltar")
-    retornando()
-    menu_emprestimos()
 
 def verificar_disponibilidade(livro):
     book_exists = False
@@ -333,89 +338,82 @@ def verificar_disponibilidade(livro):
     else:
         print('Livro disponível para empréstimo.')
 
+
 def emprestimos_ativos():
     livros_emprestados = 0
+    print(f'{"USUÁRIO":<10} {"LIVRO":<10} {"DATA PREVISTA":>10}')
     for user in lista_usuarios:
         if user.livro_emprestimo is not None:
-            dias_restantes_devolucao = user.data_devolucao - datetime.date.today()
-
-            if dias_restantes_devolucao >= 0:
-                print(
-                    f"Usuário: {user.nome}\nLivro: {user.livro_emprestimo}\nDias restantes até a devolução: {dias_restantes_devolucao}")
-            else:
-                print(
-                    f"Usuário: {user.nome}\nLivro: {user.livro_emprestimo}\nAtraso de : {dias_restantes_devolucao} dia(s)")
+            print(
+                f'{user.nome:<10} {user.livro_emprestimo:<10} \t {user.data_devolucao_prevista.strftime('%d/%m/%Y'):<10}')
 
             livros_emprestados += 1
 
     if livros_emprestados == 0:
         print('Nenhum livro foi emprestado...')
 
-    input("Pressione ENTER para voltar")
-    retornando()
-    menu_emprestimos()
-
-def historico_emprestimo():
-    print('DATA \t \t \t LIVRO \t \t USUÁRIO')
-    for user in lista_usuarios:
-        if user.livro_emprestimo is not None:
-            print(
-                f'{user.data_emprestimo} \t \t {user.livro_emprestimo} \t \t {user.nome}')
-
-# ====================== Progaramação Multas ===============
-
-
-def calcular_multa(usuario):
-    for user in lista_usuarios:
-        if user.livro_emprestimo:
-            if user.hora_emprestimo >= 0:
-                print('O usuário está em dias... ')
-            else:
-                dias_restantes_devolucao = user.data_devolucao - datetime.date.today()
-                multa = abs(dias_restantes_devolucao) * 1.00
-
-
-def emprestimos_ativos():
-    livros_emprestados = 0
-    for user in lista_usuarios:
-        if user.livro_emprestimo is not None:
-            print(f"Usuário: {user.nome}\nLivro: {user.livro_emprestimo}")
-            livros_emprestados += 1
-    if livros_emprestados == 0:
-        print('Nenhum livro foi emprestado...')
-
-    input("Pressione ENTER para voltar")
+    enter_to_return()
     retornando()
     menu_emprestimos()
 
 
 def historico_emprestimo():
-    print('DATA \t \t \t LIVRO \t \t USUÁRIO')
+    print(f'{"DATA":<10} {"LIVRO":<10} {"USUÁRIO":<10}')
     for user in lista_usuarios:
         if user.livro_emprestimo is not None:
             print(
-                f'{user.data_emprestimo} \t \t {user.livro_emprestimo} \t \t {user.nome}')
-
-# =========================================================================================
+                f'{user.data_emprestimo:<10} {user.livro_emprestimo:<10} {user.nome:<10}')
 
 
 def menu_realizar_emprestimo():
     clear()
     print("===== Realizar Emprestimos =====")
     lista_books()
+    print("5 - Voltar")
     usuario_atual = input("Digite o usuário: ")
-    livro_indice = int(input("Digite o índice do livro que desejas: "))
+    while True:
+        livro_indice = input("Digite o índice do livro que desejas: ")
+        if livro_indice.isdigit():
+            livro_indice = int(livro_indice)
+            if livro_indice == 5:
+                retornando()
+                menu_emprestimos()
+            break
+        else:
+            print("Entrada Inválida!")
+    usuario_atual = pull_user(usuario_atual)
     for user in lista_usuarios:
-        if user.livro_emprestimo is None:
-            if usuario_atual == user.nome:
-                livro = lista_livros[livro_indice - 1]
+        if usuario_atual.livro_emprestimo is None:
+            livro = lista_livros[livro_indice - 1]
 
-                realizar_emprestimo(usuario_atual, livro.titulo)
-            else:
-                print('Este usuário já possui um empréstimo...')
-                break
+            realizar_emprestimo(usuario_atual.nome, livro.titulo)
+            break
+        else:
+            print('Este usuário já possui um empréstimo...')
+            break
     retornando()
     menu_emprestimos()
+
+
+def menu_realizar_devolucao():
+    clear()
+    print("===== Realizar Devolução ======")
+    usuario_atual = input("Digite o usuario: ")
+    usuario_atual = pull_user(usuario_atual)
+
+    print(f"{usuario_atual.nome} devolveu {usuario_atual.livro_emprestimo}")
+    data = input("Digite a data de devolução (dd/mm/aa): ")
+    usuario_atual.data_devolucao = datetime.datetime.strptime(data, "%d/%m/%Y")
+
+    livro = pull_book(usuario_atual.livro_emprestimo)
+    livro.em_estoque = "Em estoque"
+    usuario_atual.livro_emprestimo = None
+    print(calcular_multa(usuario_atual))
+
+    enter_to_return()
+    retornando()
+    menu_emprestimos()
+
 
 def menu_verificar_disponibilidade():
     clear()
@@ -437,13 +435,109 @@ def menu_historico_emprestimo():
     clear()
     print("===== Histórico de Empréstimo =====")
     historico_emprestimo()
-    input("Pressione ENTER para voltar")
+    enter_to_return()
     menu_emprestimos()
-# =============================== Programação Multas ================================================
+# ====================== Progaramação Multas ===============
 
+
+def calcular_multa(usuario):
+    hoje = datetime.date.today()
+    dias_atraso = (usuario.data_devolucao.date() - hoje).days
+
+    if dias_atraso > 7:
+        valor_multa = (dias_atraso - 7) * 1.00
+        usuario.multa = f"{usuario.nome} está com R${valor_multa:.2f} em multas"
+    else:
+        if usuario.data_devolucao.date() > hoje:
+            usuario.multa = f"O usuário {usuario.nome} está em dias..."
+        else:
+            print("Data inválida...")
+    return usuario.multa
+
+
+def lista_inadimplentes():
+    print(f'{"USUÁRIO":<10} {"STATUS":<20}')
+    print("=========================================")
+    for user in lista_usuarios:
+        if user.multa is not None:
+            print(f'{user.nome:<10} {user.multa:<20}')
+            print("=========================================")
+
+
+def menu_multas_pendentes():
+    clear()
+    print("===== Multas Pendentes =====")
+    usuario_atual = input("Digite o usuário: ")
+    usuario_atual = pull_user(usuario_atual)
+    print(calcular_multa(usuario_atual))
+    enter_to_return()
+    retornando()
+    menu_multas()
+
+
+def menu_inadimplentes():
+    clear()
+    print("===== Lista de Inadimplentes =====")
+    lista_inadimplentes()
+    enter_to_return()
+    retornando()
+    menu_emprestimos()
+
+
+# ================================ Relatórios =========================================================
+
+
+def livros_mais_emprestados():
+
+    livros_ordenados = sorted(
+        lista_livros, key=lambda livro: livro.emprestimos, reverse=True)
+    return livros_ordenados
+
+
+def usuarios_com_mais_emprestimos():
+
+    usuarios_ranking = []
+
+    for user in lista_usuarios:
+        usuarios_ranking.append(
+            {"nome": user.nome, "pontos": user.emprestimos})
+
+    usuarios_ranking.sort(key=lambda x: x["pontos"], reverse=True)
+
+    return usuarios_ranking
+
+
+def menu_livros_mais_emprestados():
+    clear()
+    print("===== Livros Mais Emprestados ======")
+
+    for i, livro in enumerate(livros_mais_emprestados()):
+        print(f"{i+1}° {livro.titulo} - {livro.emprestimos} empréstimos")
+    enter_to_return()
+    menu_relatorios()
+
+
+def menu_usuarios_com_mais_emprestimos():
+    clear()
+    print("===== Usuários Com Mais Empréstimos ======")
+    for i, usuario in enumerate(usuarios_com_mais_emprestimos()):
+        print(f"{i+1}° {usuario['nome']} - {usuario['pontos']} empréstimos")
+    enter_to_return()
+    menu_relatorios()
+
+
+def menu_estoque_atual():
+    clear()
+    print("===== Estoque =====")
+    lista_books()
+    enter_to_return()
+    menu_relatorios()
 
 # =============================== Menu principal ================================================
+
+
 def menu_principal():
+
     clear()
     print("===== Menu Principal =====")
     for i in range(len(topicos)):
@@ -467,14 +561,20 @@ def menu_principal():
         menu_relatorios()
 
     elif option == 6:
-        print("oi")
+        print("Saindo...")
+        sleep(2)
+        clear()
 
     else:
         print("❌Opção Inválida")
+
+
 def choose_option():
     option = int(input("Digite a opção desejada: "))
     return option
 # =========================== Menu Livros ===================================
+
+
 def menu_livros():
     clear()
     print("===== Livros =====")
@@ -505,6 +605,8 @@ def menu_livros():
         retornando()
         menu_livros()
 # =========================== Menu Usuarios ===================================
+
+
 def menu_usuarios():
     clear()
     print("===== Usuários =====")
@@ -534,6 +636,8 @@ def menu_usuarios():
         retornando()
         menu_livros()
 # =========================== Menu Empréstimos ===================================
+
+
 def menu_emprestimos():
     clear()
     print("===== Empréstimos =====")
@@ -564,6 +668,8 @@ def menu_emprestimos():
         retornando()
         menu_livros()
 # =========================== Menu Multas ===================================
+
+
 def menu_multas():
     clear()
     print("===== Multas =====")
@@ -573,14 +679,11 @@ def menu_multas():
     escolha = choose_option()
 
     if escolha == 1:
-        menu_registrar_devolucao()
+        menu_multas_pendentes()
+
     elif escolha == 2:
-        menu_calcular_multa()
-    elif escolha == 3:
-        menu_emitir_aviso()
-    elif escolha == 4:
         menu_inadimplentes()
-    elif escolha == 5:
+    elif escolha == 3:
         menu_principal()
     else:
         print("❌Valor inválido, digite novamente")
@@ -599,14 +702,12 @@ def menu_relatorios():
     escolha = choose_option()
 
     if escolha == 1:
-        print("sdljghdsljughsd")
+        menu_livros_mais_emprestados()
     elif escolha == 2:
-        print("sdljghdsljughsd")
+        menu_usuarios_com_mais_emprestimos()
     elif escolha == 3:
-        print("sdljghdsljughsd")
+        menu_estoque_atual()
     elif escolha == 4:
-        print("sdljghdsljughsd")
-    elif escolha == 5:
         menu_principal()
     else:
         print("❌Valor inválido, digite novamente")
