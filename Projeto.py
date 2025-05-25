@@ -362,8 +362,8 @@ def historico_emprestimo():
     for user in lista_usuarios:
         if user.livro_emprestimo is not None:
             print(
-                f'{user.data_emprestimo:<10} {user.livro_emprestimo:<10} {user.nome:<10}')
-
+            f'{user.data_emprestimo.strftime("%d/%m/%Y"):<10} {user.livro_emprestimo:<10} {user.nome:<10}')
+                
 
 def menu_realizar_emprestimo():
     clear()
